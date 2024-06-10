@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from models import db, Book, Genre, User, Review, Book_Genre
 from tools import BooksFilter, ImageSaver
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, delete
 from math import ceil
 
 bp = Blueprint('books', __name__, url_prefix='/books')
@@ -25,7 +25,7 @@ def search_params():
 def index():
 
     book = BooksFilter(**search_params()).perform()
-    pagination = db.paginate(book)
+    pagination = db.paginate(book, per_page=current_app.config["PER_PAGE"])
     books = pagination.items
     genres = db.session.execute(db.select(Genre)).scalars()
     return render_template('books/index.html',
@@ -39,11 +39,22 @@ def index():
 def new():
     book = Book()
     genres = db.session.execute(db.select(Genre)).scalars()
-    users = db.session.execute(db.select(User)).scalars()
     return render_template('books/new.html',
                            genres=genres,
-                           users=users,
                            book=book)
+
+@bp.route('/<int:book_id>/form_of_edit')
+@login_required
+def form_of_edit(book_id):
+    book = db.get_or_404(Book, book_id)
+    genres = db.session.execute(db.select(Genre)).scalars()
+    selected_genres = db.session.execute(db.select(Book_Genre.genre_id).filter_by(book_id=book_id))
+    selected_genres = [i.genre_id for i in list(selected_genres)]
+    return render_template('books/edit.html',
+                           genres=genres,
+                           book=book,
+                           selected_genres=selected_genres)
+
 
 @bp.route('/create', methods=['POST'])
 @login_required
@@ -61,11 +72,8 @@ def create():
 
         # запись в books_genres
         genre_ids=request.form.getlist("genre_id")
-        book = db.session.execute(db.select(Book).filter_by(image_id=image_id)).scalar()
-        book_id = book.id
-
         for genre_id in genre_ids:
-            record_in_book_genre = Book_Genre(genre_id=genre_id, book_id=book_id)
+            record_in_book_genre = Book_Genre(genre_id=genre_id, book_id=book.id)
             db.session.add(record_in_book_genre)
         db.session.commit()
 
@@ -73,13 +81,50 @@ def create():
         flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
         db.session.rollback()
         genres = db.session.execute(db.select(Genre)).scalars()
-        users = db.session.execute(db.select(User)).scalars()
         return render_template('books/new.html',
                             genres=genres,
-                            users=users,
                             book=book)
 
-    flash(f'Курс {book.name} был успешно добавлен!', 'success')
+    flash(f'Книга {book.name} была успешно добавлена!', 'success')
+
+    return redirect(url_for('books.index'))
+
+@bp.route('/<int:book_id>/edit', methods=['POST'])
+@login_required
+def edit(book_id):
+    try:
+        book = db.get_or_404(Book, book_id)
+        book.name = request.form.get("name")
+        book.short_desc = request.form.get("short_desc")
+        book.year = request.form.get("year")
+        book.publisher = request.form.get("publisher")
+        book.author = request.form.get("author")
+        book.volume = request.form.get("volume")
+        db.session.commit()
+
+        # удаление в books_genres
+    
+        book_genres =  db.session.query(Book_Genre).filter_by(book_id=book_id).all() 
+        for book_genre in book_genres: 
+            db.session.delete(book_genre) 
+        db.session.commit()
+
+        # запись в books_genres
+        genre_ids=request.form.getlist("genre_id")
+        for genre_id in genre_ids:
+            record_in_book_genre = Book_Genre(genre_id=genre_id, book_id=book.id)
+            db.session.add(record_in_book_genre)
+        db.session.commit()
+
+    except IntegrityError as err:
+        flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
+        db.session.rollback()
+        genres = db.session.execute(db.select(Genre)).scalars()
+        return render_template('books/edit.html',
+                            genres=genres,
+                            book=book)
+
+    flash(f'Книга {book.name} была успешно изменена!', 'success')
 
     return redirect(url_for('books.index'))
 
@@ -117,6 +162,7 @@ def show(book_id):
     return render_template('books/show.html',book=book, reviews=reviews, review_exist=review_exist, review_cur_user=review_cur_user, genres=genres)
 
 @bp.route('/<int:book_id>/reviews', methods=['GET','POST'])
+@login_required
 def show_reviews(book_id):
     book = db.get_or_404(Book, book_id)
     check = None

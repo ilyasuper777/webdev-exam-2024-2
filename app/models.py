@@ -40,6 +40,9 @@ class Book_Genre(Base):
     genre: Mapped["Genre"] = relationship()
     book: Mapped["Book"] = relationship()
 
+    def __repr__(self):
+        return '<Book_Genre %r>' % self.id
+
 class Book(Base):
     __tablename__ = 'books'
 

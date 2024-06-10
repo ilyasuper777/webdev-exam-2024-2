@@ -2,8 +2,8 @@
 macros_for_edit_and_create %} {% block content %}
 <div class="container">
   <h2 class="my-3 text-center text-uppercase font-weight-bold">
-    Добавление книги
+    Редактирование книги
   </h2>
-  {{ macros_for_edit_and_create(genres, "create") }}
+  {{ macros_for_edit_and_create(genres, "edit", book, selected_genres) }}
 </div>
 {% endblock %}

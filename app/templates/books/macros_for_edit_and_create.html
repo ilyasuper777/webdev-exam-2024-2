@@ -1,0 +1,127 @@
+{% macro macros_for_edit_and_create(genres, method, book=None,
+selected_genres=[]) %}
+<form
+  method="POST"
+  action="{%if method=="create" %} {{ url_for('books.create') }} {% elif method=="edit" %} {{ url_for('books.edit', book_id=book.id) }} {% endif %}" 
+  enctype="multipart/form-data"
+>
+  <div class="mb-3 row">
+    <div class="col-md-6 d-flex flex-column">
+      <div class="mb-3">
+        <label for="name">Название</label>
+        <input
+          class="form-control"
+          type="text"
+          name="name"
+          id="name"
+          value="{{ book.name or '' }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="author">Автор</label>
+        <input
+          class="form-control"
+          type="text"
+          name="author"
+          id="author"
+          value="{{ book.author or '' }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="publisher">Издатель</label>
+        <input
+          class="form-control"
+          type="text"
+          name="publisher"
+          id="publisher"
+          value="{{ book.publisher or '' }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="volume">Объём книги в страницах</label>
+        <input
+          class="form-control"
+          type="text"
+          name="volume"
+          id="volume"
+          value="{{ book.volume or '' }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="year">Год написания</label>
+        <input
+          class="form-control"
+          type="text"
+          name="year"
+          id="year"
+          value="{{ book.year or '' }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="genre">Жанр</label>
+        <select
+          data-mdb-select-init
+          multiple
+          class="form-select"
+          name="genre_id"
+          id="genre"
+        >
+          {% for genre in genres %}
+          <option
+            {%
+            if
+            genre.id
+            in
+            selected_genres
+            %}selected{%
+            endif
+            %}
+            value="{{ genre.id }}"
+          >
+            {{ genre.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3 d-flex flex-column flex-grow-1">
+        <label for="short_description">Краткое описание</label>
+        <textarea
+          class="form-control flex-grow-1"
+          name="short_desc"
+          id="short_description"
+          cols="30"
+          rows="5"
+        >
+{{ book.short_desc or '' }}</textarea
+        >
+      </div>
+    </div>
+    {%if method=="create" %}
+    <div class="col-md-6 d-flex flex-column">
+      <div class="mb-3">
+        <label for="background_img">Фоновое изображение</label>
+        <input
+          class="form-control"
+          type="file"
+          name="background_img"
+          id="background_img"
+        />
+      </div>
+      <div
+        class="mb-3 background-preview p-3 rounded d-flex align-items-center justify-content-center"
+      >
+        <img src="#" class="img-fluid d-none" alt="" />
+        <label for="background_img" class="btn btn-dark"
+          >Выбрать изображение</label
+        >
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3 text-center">
+    <input type="submit" class="btn btn-dark" value="Сохранить" />
+  </div>
+</form>
+
+{% endmacro %}
