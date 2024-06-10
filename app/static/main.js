@@ -16,19 +16,19 @@ function imagePreviewHandler(event) {
   }
 }
 
-function openLink(event) {
-  let row = event.target.closest(".row");
-  if (row.dataset.url) {
-    window.location = row.dataset.url;
-  }
-}
+//function openLink(event) {
+//  let row = event.target.closest(".row");
+//  if (row.dataset.url) {
+//    window.location = row.dataset.url;
+//  }
+//}
 
-window.onload = function () {
-  let background_img_field = document.getElementById("background_img");
-  if (background_img_field) {
-    background_img_field.onchange = imagePreviewHandler;
-  }
-  for (let course_elm of document.querySelectorAll(".books-list .row")) {
-    course_elm.onclick = openLink;
-  }
-};
+//window.onload = function () {
+//  let background_img_field = document.getElementById("background_img");
+//  if (background_img_field) {
+//    background_img_field.onchange = imagePreviewHandler;
+//  }
+//  for (let course_elm of document.querySelectorAll(".books-list .row")) {
+//    course_elm.onclick = openLink;
+//  }
+//};

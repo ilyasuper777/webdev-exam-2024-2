@@ -41,8 +41,74 @@
                             <span>★</span> <span>{{ "%.2f" | format(book.rating) }}</span>
                         </p> 
                     </div>
+                    <div class="d-flex">
                     <p class="text-muted my-3">{{ book.author }}</p>
+                    <a class="ms-auto btn btn-primary" href="{{ url_for('books.show', book_id=book.id) }}">Посмотреть</a>
+                    <a class="ms-auto btn btn-info" href="{{ url_for('books.form_of_edit', book_id=book.id) }}">Редактировать</a>
+                <!-- Button trigger modal -->
+        <a
+          type="button"
+          class="btn btn-danger ms-auto"
+          data-bs-toggle="modal"
+          data-bs-target="#staticBackdrop{{book.id}}"
+        >
+          Удалить
+        </a>
+        <!-- Modal -->
+      <div
+        class="modal fade"
+        id="staticBackdrop{{book.id}}"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+        tabindex="-1"
+        aria-labelledby="staticBackdropLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="staticBackdropLabel{{book.id}}">
+                Удаление книги
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              Вы уверены, что хотите удалить книгу {{ book.name }} автора
+              {{ book.author }}?
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Нет
+              </button>
+              <form method="POST" action="{{ url_for('books.delete', book_id=book.id) }}">
+                <input
+                  type="text"
+                  id="book_id"
+                  name="book_id"
+                  hidden
+                  value="{{book.id}}"
+                  class="form-control"
+                />
+                <button type="submit" class="btn btn-danger">Да</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>    
+                </div>
+                    <div class="d-flex">
                     <p>{{ book.short_desc | truncate(200) }}</p>
+                     
+                    </div>
                 </div>
             </div>
         {% endfor %}

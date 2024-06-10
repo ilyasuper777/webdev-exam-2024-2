@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
-from models import db, Book, Genre, User, Review, Book_Genre
+from models import db, Book, Genre, User, Review, Book_Genre, Image
 from tools import BooksFilter, ImageSaver
 from sqlalchemy import desc, func, delete
 from math import ceil
+import os
 
 bp = Blueprint('books', __name__, url_prefix='/books')
 
@@ -23,7 +24,6 @@ def search_params():
 
 @bp.route('/')
 def index():
-
     book = BooksFilter(**search_params()).perform()
     pagination = db.paginate(book, per_page=current_app.config["PER_PAGE"])
     books = pagination.items
@@ -42,19 +42,6 @@ def new():
     return render_template('books/new.html',
                            genres=genres,
                            book=book)
-
-@bp.route('/<int:book_id>/form_of_edit')
-@login_required
-def form_of_edit(book_id):
-    book = db.get_or_404(Book, book_id)
-    genres = db.session.execute(db.select(Genre)).scalars()
-    selected_genres = db.session.execute(db.select(Book_Genre.genre_id).filter_by(book_id=book_id))
-    selected_genres = [i.genre_id for i in list(selected_genres)]
-    return render_template('books/edit.html',
-                           genres=genres,
-                           book=book,
-                           selected_genres=selected_genres)
-
 
 @bp.route('/create', methods=['POST'])
 @login_required
@@ -88,6 +75,18 @@ def create():
     flash(f'Книга {book.name} была успешно добавлена!', 'success')
 
     return redirect(url_for('books.index'))
+
+@bp.route('/<int:book_id>/form_of_edit')
+@login_required
+def form_of_edit(book_id):
+    book = db.get_or_404(Book, book_id)
+    genres = db.session.execute(db.select(Genre)).scalars()
+    selected_genres = db.session.execute(db.select(Book_Genre.genre_id).filter_by(book_id=book_id))
+    selected_genres = [i.genre_id for i in list(selected_genres)]
+    return render_template('books/edit.html',
+                           genres=genres,
+                           book=book,
+                           selected_genres=selected_genres)
 
 @bp.route('/<int:book_id>/edit', methods=['POST'])
 @login_required
@@ -126,6 +125,46 @@ def edit(book_id):
 
     flash(f'Книга {book.name} была успешно изменена!', 'success')
 
+    return redirect(url_for('books.show', book_id=book_id))
+
+
+@bp.route('/<int:book_id>/delete', methods=['GET','POST'])
+@login_required
+def delete(book_id):
+    try:
+        book = db.get_or_404(Book, book_id)
+        # удаление в books_genres
+        book_genres =  db.session.query(Book_Genre).filter_by(book_id=book_id).all() 
+        for book_genre in book_genres: 
+            db.session.delete(book_genre) 
+        db.session.commit()
+        
+        # удаление в reviews
+        reviews = db.session.query(Review).filter_by(book_id=book_id).all()
+        for review in reviews: 
+            db.session.delete(review) 
+        db.session.commit()
+
+        # удаление в books
+        image_id = book.image_id
+        book = db.get_or_404(Book, book_id)
+        db.session.delete(book)
+        db.session.commit()
+
+        # удаление в images
+        image = db.session.query(Image).filter_by(id=image_id).one() 
+        db.session.delete(image)
+        db.session.commit()
+        split_tup = os.path.splitext(image.file_name) # получение расширения
+        path_to_img = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media', 'images', image.id + split_tup[1]) 
+        os.remove(path_to_img) 
+
+    except IntegrityError as err:
+        flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
+        db.session.rollback()
+        return redirect(url_for('books.show', book_id=book.id))
+
+    flash(f'Книга {book.name} была успешно удалена!', 'success')
     return redirect(url_for('books.index'))
 
 @bp.route('/<int:book_id>', methods=['GET','POST'])
