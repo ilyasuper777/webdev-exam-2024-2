@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey, DateTime, Text, Integer, MetaData
+from users_policy import UsersPolicy
 
 
 class Base(DeclarativeBase):
@@ -132,6 +133,21 @@ class User(Base, UserMixin):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id")) # -- идентификатор пользователя.
     
     role: Mapped["Role"] = relationship()
+
+    def is_admin(self):
+        return self.role.name == "администратор"
+    
+    def is_moderator(self):
+        return self.role.name == "модератор" 
+
+    def can(self, action, record=None):
+        policy = UsersPolicy(record)
+        method = getattr(policy, action, None)
+        if method == None:
+            return False
+        else: 
+            return method()
+
 
 class Role(Base):
     __tablename__ = 'roles'

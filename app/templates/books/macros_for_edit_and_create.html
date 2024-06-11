@@ -94,6 +94,9 @@ selected_genres=[]) %}
         >
 {{ book.short_desc or '' }}</textarea
         >
+        <script>
+const easyMDE = new EasyMDE({element: document.getElementById('short_description')});
+</script>
       </div>
     </div>
     {%if method=="create" %}

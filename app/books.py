@@ -6,6 +6,7 @@ from tools import BooksFilter, ImageSaver
 from sqlalchemy import desc, func, delete
 from math import ceil
 import os
+from auth import check_rights
 
 bp = Blueprint('books', __name__, url_prefix='/books')
 
@@ -36,6 +37,7 @@ def index():
 
 @bp.route('/new')
 @login_required
+@check_rights('create_book')
 def new():
     book = Book()
     genres = db.session.execute(db.select(Genre)).scalars()
@@ -45,6 +47,7 @@ def new():
 
 @bp.route('/create', methods=['POST'])
 @login_required
+@check_rights('create_book')
 def create():
     f = request.files.get('background_img')
     img = None
@@ -78,6 +81,7 @@ def create():
 
 @bp.route('/<int:book_id>/form_of_edit')
 @login_required
+@check_rights('edit_book')
 def form_of_edit(book_id):
     book = db.get_or_404(Book, book_id)
     genres = db.session.execute(db.select(Genre)).scalars()
@@ -90,6 +94,7 @@ def form_of_edit(book_id):
 
 @bp.route('/<int:book_id>/edit', methods=['POST'])
 @login_required
+@check_rights('edit_book')
 def edit(book_id):
     try:
         book = db.get_or_404(Book, book_id)
@@ -130,6 +135,7 @@ def edit(book_id):
 
 @bp.route('/<int:book_id>/delete', methods=['GET','POST'])
 @login_required
+@check_rights('delete_book')
 def delete(book_id):
     try:
         book = db.get_or_404(Book, book_id)
@@ -152,12 +158,14 @@ def delete(book_id):
         db.session.commit()
 
         # удаление в images
-        image = db.session.query(Image).filter_by(id=image_id).one() 
-        db.session.delete(image)
-        db.session.commit()
-        split_tup = os.path.splitext(image.file_name) # получение расширения
-        path_to_img = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media', 'images', image.id + split_tup[1]) 
-        os.remove(path_to_img) 
+        images = db.session.query(Image).filter_by(id=image_id).all()
+        if len(images) == 1:
+            for image in images:
+                db.session.delete(image)
+                db.session.commit()
+                split_tup = os.path.splitext(image.file_name) # получение расширения
+                path_to_img = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media', 'images', image.id + split_tup[1]) 
+                os.remove(path_to_img) 
 
     except IntegrityError as err:
         flash(f'Возникла ошибка при записи данных в БД. Проверьте корректность введённых данных. ({err})', 'danger')
@@ -170,26 +178,29 @@ def delete(book_id):
 @bp.route('/<int:book_id>', methods=['GET','POST'])
 def show(book_id):
     book = db.get_or_404(Book, book_id)
-    check = db.session.execute(db.select(Review).filter_by(user_id=current_user.get_id())).scalar() # проверка к БД, что пользователь не оставлял review к курсу
-    if request.method == "POST" and check is None:
-        grade = int(request.form.get("grade", 0))
-        comment = request.form.get("comment", 0)
-        book.rating_sum += grade
-        book.rating_num += 1
-        new_reviews = Review(
-            rating = grade,
-            text = comment,
-            book_id = book_id,
-            user_id = current_user.id
-        )
-        db.session.add(new_reviews)
-        db.session.commit()
-    if request.method == "POST" and check is not None:
-        flash(f'Вы уже оставляли отзыв !!!!!!!!!!!', 'danger')
+    review_exist = False
+    review_cur_user = ""
+    if current_user.is_authenticated:
+        check = db.session.execute(db.select(Review).filter_by(user_id=current_user.get_id(), book_id=book.id)).scalar() # проверка к БД, что пользователь не оставлял review к курсу
+        if request.method == "POST" and check is None:
+            grade = int(request.form.get("grade", 0))
+            comment = request.form.get("comment", 0)
+            book.rating_sum += grade
+            book.rating_num += 1
+            new_reviews = Review(
+                rating = grade,
+                text = comment,
+                book_id = book_id,
+                user_id = current_user.id
+            )
+            db.session.add(new_reviews)
+            db.session.commit()
+        if request.method == "POST" and check is not None:
+            flash(f'Вы уже оставляли отзыв !!!!!!!!!!!', 'danger')
+        review_cur_user = db.session.query(Review).filter(Review.user_id == current_user.id, Review.book_id == book.id).all()
+        review_exist = len(review_cur_user) != 0
     #5 последний отзывов о курсе
     reviews = db.session.execute(db.select(Review).filter_by(book_id=book_id).order_by(desc(Review.created_at)).limit(5)).scalars()
-    review_cur_user = db.session.query(Review).filter(Review.user_id == current_user.id, Review.book_id == book.id).all()
-    review_exist = len(review_cur_user) != 0
 
     # запрос к БД для genres
 
@@ -202,6 +213,7 @@ def show(book_id):
 
 @bp.route('/<int:book_id>/reviews', methods=['GET','POST'])
 @login_required
+@check_rights('view_reviews')
 def show_reviews(book_id):
     book = db.get_or_404(Book, book_id)
     check = None

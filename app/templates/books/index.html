@@ -5,7 +5,7 @@
 <div class="container">
     <div class="my-5">
 
-        <h2 class="mb-3 text-center text-uppercase font-weight-bold">Каталог курсов</h2>
+        <h2 class="mb-3 text-center text-uppercase font-weight-bold">Каталог книг</h2>
 
         <form class="mb-5 mt-3 row align-items-center">
             <div class="col-md-6 my-3">
@@ -13,8 +13,8 @@
             </div>
             
             <div class="col-md-4 my-3">
-                <select class="form-select" id="book-genre" name="genre_ids" title="Категория курса">
-                    <option value="">Выберите категорию</option>
+                <select class="form-select" id="book-genre" name="genre_ids" title="Жанр книги" multiple>
+                    <option value="">Выберите жанр</option>
                     {% for genre in genres %}
                         <option value="{{ genre.id }}" {% if genre.id | string in request.args.getlist('genre_ids') %}selected{% endif %}>{{ genre.name }}</option>
                     {% endfor %}
@@ -43,9 +43,10 @@
                     </div>
                     <div class="d-flex">
                     <p class="text-muted my-3">{{ book.author }}</p>
-                    <a class="ms-auto btn btn-primary" href="{{ url_for('books.show', book_id=book.id) }}">Посмотреть</a>
-                    <a class="ms-auto btn btn-info" href="{{ url_for('books.form_of_edit', book_id=book.id) }}">Редактировать</a>
-                <!-- Button trigger modal -->
+                    <a class="ms-auto btn btn-primary" href="{{ url_for('books.show', book_id=book.id) }}">Посмотреть</a> {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_moderator()) %}
+                    <a class="ms-auto btn btn-info" href="{{ url_for('books.form_of_edit', book_id=book.id) }}">Редактировать</a> {% endif %}
+                {% if current_user.is_authenticated and current_user.is_admin() %}
+                    <!-- Button trigger modal -->
         <a
           type="button"
           class="btn btn-danger ms-auto"
@@ -104,10 +105,11 @@
           </div>
         </div>
       </div>    
+      {% endif %}
                 </div>
                     <div class="d-flex">
                     <p>{{ book.short_desc | truncate(200) }}</p>
-                     
+                     <p class="ms-auto"> Количество отзывов: {{ book.rating_num }}</p>
                     </div>
                 </div>
             </div>
@@ -118,7 +120,7 @@
         {{ render_pagination(pagination, request.endpoint, search_params) }}
     </div>
 
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and current_user.is_admin() %}
         <div class="text-center my-3">
             <a class="btn btn-lg btn-dark" href="{{ url_for('books.new') }}">Создать книгу</a>
         </div>
