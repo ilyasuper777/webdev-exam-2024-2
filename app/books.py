@@ -21,6 +21,10 @@ def search_params():
     return {
         'name': request.args.get('name'),
         'genre_ids': [x for x in request.args.getlist('genre_ids') if x],
+        'years': [x for x in request.args.getlist('years') if x],
+        'author': request.args.get('author'),
+        'volume_start': request.args.get('volume_start'),
+        'volume_finish': request.args.get('volume_finish')
     }
 
 @bp.route('/')
@@ -29,9 +33,17 @@ def index():
     pagination = db.paginate(book, per_page=current_app.config["PER_PAGE"])
     books = pagination.items
     genres = db.session.execute(db.select(Genre)).scalars()
+    
+    # Нахождение years
+    books_for_years = db.session.execute(db.select(Book)).scalars()
+    years = set()
+    for book_for_year in books_for_years:
+        years.add(book_for_year.year)
+    
     return render_template('books/index.html',
                            books=books,
                            genres=genres,
+                           years = years,
                            pagination=pagination,
                            search_params=search_params())
 

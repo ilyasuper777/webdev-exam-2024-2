@@ -8,11 +8,11 @@
         <h2 class="mb-3 text-center text-uppercase font-weight-bold">Каталог книг</h2>
 
         <form class="mb-5 mt-3 row align-items-center">
-            <div class="col-md-6 my-3">
-                <input autocomplete="off" type="text" class="form-control" id="genre-name" name="name" value="{{ request.args.get('name') or '' }}" placeholder="Название курса">
+            <div class="col-md-12 my-3">
+                <input autocomplete="off" type="text" class="form-control" id="genre-name" name="name" value="{{ request.args.get('name') or '' }}" placeholder="Название книги">
             </div>
             
-            <div class="col-md-4 my-3">
+            <div class="col-md-6 my-3">
                 <select class="form-select" id="book-genre" name="genre_ids" title="Жанр книги" multiple>
                     <option value="">Выберите жанр</option>
                     {% for genre in genres %}
@@ -21,8 +21,29 @@
                 </select>
             </div>
 
-            <div class="col-md-2 my-3 align-self-end">
+            <div class="col-md-6 my-3">
+                <select class="form-select" id="years" name="years" title="Год книги" multiple>
+                    <option value="">Выберите год</option>
+                    {% for year in years %}
+                        <option value="{{ year }}" {% if year | string in request.args.getlist('years') %}selected{% endif %}>{{ year}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-12 my-3">
+                <input autocomplete="off" type="text" class="form-control" id="author" name="author" value="{{ request.args.get('author') or '' }}" placeholder="Имя автора">
+            </div>
+            <div class="col-md-6 my-3">
+                <input autocomplete="off" type="text" class="form-control" id="volume_start" name="volume_start" value="{{ request.args.get('volume_start') or '' }}" placeholder="Минимальное количество страниц">
+            </div>
+            <div class="col-md-6 my-3">
+                <input autocomplete="off" type="text" class="form-control" id="volume_finish" name="volume_finish" value="{{ request.args.get('volume_finish') or '' }}" placeholder="Максимальное количество страниц">
+            </div>
+            <div class="col-md-5 my-3">
+            </div>
+            <div class="col-md-2 my-3 align-self-end text-center">
                 <button type="submit" class="btn btn-dark w-100 mt-auto">Найти</button>
+            </div>
+            <div class="col-md-5 my-3">
             </div>
         </form>
     </div>

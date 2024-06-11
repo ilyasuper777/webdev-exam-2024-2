@@ -6,14 +6,22 @@ from flask import current_app
 from models import db, Book, Image, Book_Genre
 
 class BooksFilter:
-    def __init__(self, name, genre_ids):
+    def __init__(self, name, genre_ids, years, author, volume_start, volume_finish):
         self.name = name
         self.genre_ids = genre_ids
+        self.years = years
+        self.author = author
+        self.volume_start = volume_start
+        self.volume_finish = volume_finish
         self.query = db.select(Book)
 
     def perform(self):
         self.__filter_by_name()
         self.__filter_by_genre_ids()
+        self.__filter_by_years()
+        self.__filter_by_author()
+        self.__filter_by_volume_start()
+        self.__filter_by_volume_finish()
         return self.query.order_by(Book.year.desc())
 
     def __filter_by_name(self):
@@ -28,7 +36,25 @@ class BooksFilter:
             self.query = self.query.filter(
             Book.id.in_(query2))
            
-        
+    def __filter_by_years(self):
+        if self.years:
+            self.query = self.query.filter(
+                Book.year.in_(self.years))
+
+    def __filter_by_author(self):
+        if self.author:
+            self.query = self.query.filter(
+                Book.author.ilike('%' + self.author + '%'))
+
+    def __filter_by_volume_start(self):
+        if self.volume_start:
+            self.query = self.query.filter(
+                Book.volume >= self.volume_start)
+
+    def __filter_by_volume_finish(self):
+        if self.volume_finish:
+            self.query = self.query.filter(
+                Book.volume <= self.volume_finish)
 
 
 class ImageSaver:
