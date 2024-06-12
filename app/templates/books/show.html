@@ -22,7 +22,7 @@
     <h2 class="mb-3 text-center text-uppercase font-weight-bold">
       Краткое описание книги
     </h2>
-    <p >{{ book.short_desc }}</p>
+    <p >{{ book.short_desc | safe }}</p>
   </section>
 <h2 class="mb-3 text-center text-uppercase font-weight-bold">
       Дата написания книги
@@ -58,7 +58,7 @@
         <p>Дата отзыва: {{ review.created_at }}</p>
         <p>Оценка: {{ review.rating }}</p>
       </div>
-      <p>{{ review.text}}</p>
+      <p>{{ review.text | safe }}</p>
     </div>
     {% endfor %}
   </section>
@@ -96,7 +96,7 @@
       rows="5"
     ></textarea>
     <script>
-const easyMDE = new EasyMDE({element: document.getElementById('short_description')});
+const easyMDE = new EasyMDE({element: document.getElementById('comment')});
 </script>
     <div class="mb-3 text-center">
       <input type="submit" class="btn btn-dark" value="Отправить" />
@@ -111,7 +111,7 @@ const easyMDE = new EasyMDE({element: document.getElementById('short_description
       <p>Дата отзыва: {{ review.created_at }}</p>
       <p>Оценка: {{ review.rating }}</p>
     </div>
-    <p>{{ review.text}}</p>
+    <p>{{ review.text | safe }}</p>
   </div>
   {% endfor %} {% else %} {% endif %}
 </div>

@@ -7,6 +7,8 @@ from sqlalchemy import desc, func, delete
 from math import ceil
 import os
 from auth import check_rights
+import markdown
+import bleach
 
 bp = Blueprint('books', __name__, url_prefix='/books')
 
@@ -69,6 +71,7 @@ def create():
 
         image_id = img.id if img else None
         book = Book(**params(), image_id=image_id)
+        book.short_desc = bleach.clean(markdown.markdown(book.short_desc))
         db.session.add(book)
         db.session.commit()
 
@@ -111,7 +114,7 @@ def edit(book_id):
     try:
         book = db.get_or_404(Book, book_id)
         book.name = request.form.get("name")
-        book.short_desc = request.form.get("short_desc")
+        book.short_desc = bleach.clean(markdown.markdown(request.form.get("short_desc")))
         book.year = request.form.get("year")
         book.publisher = request.form.get("publisher")
         book.author = request.form.get("author")
@@ -190,13 +193,14 @@ def delete(book_id):
 @bp.route('/<int:book_id>', methods=['GET','POST'])
 def show(book_id):
     book = db.get_or_404(Book, book_id)
+    book.short_desc = book.short_desc
     review_exist = False
     review_cur_user = ""
     if current_user.is_authenticated:
         check = db.session.execute(db.select(Review).filter_by(user_id=current_user.get_id(), book_id=book.id)).scalar() # проверка к БД, что пользователь не оставлял review к курсу
         if request.method == "POST" and check is None:
             grade = int(request.form.get("grade", 0))
-            comment = request.form.get("comment", 0)
+            comment = bleach.clean(markdown.markdown(request.form.get("comment", 0)))
             book.rating_sum += grade
             book.rating_num += 1
             new_reviews = Review(
@@ -211,9 +215,10 @@ def show(book_id):
             flash(f'Вы уже оставляли отзыв !!!!!!!!!!!', 'danger')
         review_cur_user = db.session.query(Review).filter(Review.user_id == current_user.id, Review.book_id == book.id).all()
         review_exist = len(review_cur_user) != 0
+    
     #5 последний отзывов о курсе
     reviews = db.session.execute(db.select(Review).filter_by(book_id=book_id).order_by(desc(Review.created_at)).limit(5)).scalars()
-
+    
     # запрос к БД для genres
 
     list_of_genres_id = db.session.execute(db.select(Book_Genre).filter_by(book_id=book_id)).scalars()
@@ -229,7 +234,7 @@ def show(book_id):
 def show_reviews(book_id):
     book = db.get_or_404(Book, book_id)
     check = None
-    check = db.session.execute(db.select(Review).filter_by(user_id=current_user.get_id())).scalar() # проверка к БД, что пользователь не оставлял review к курсу
+    check = db.session.execute(db.select(Review).filter_by(user_id=current_user.get_id(), book_id=book.id)).scalar() # проверка к БД, что пользователь не оставлял review к курсу
     if request.method == "POST" and check is None:
         grade = int(request.form.get("grade", 0))
         comment = request.form.get("comment", 0)
@@ -237,7 +242,7 @@ def show_reviews(book_id):
         book.rating_num += 1
         new_reviews = Review(
             rating = grade,
-            text = comment,
+            text = bleach.clean(markdown.markdown(comment)),
             book_id = book.id,
             user_id = current_user.id
         )

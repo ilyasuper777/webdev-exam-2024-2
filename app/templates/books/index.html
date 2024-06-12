@@ -129,8 +129,12 @@
       {% endif %}
                 </div>
                     <div class="d-flex">
-                    <p>{{ book.short_desc | truncate(200) }}</p>
+                    <p>Год написания: {{ book.year }}</p>
                      <p class="ms-auto"> Количество отзывов: {{ book.rating_num }}</p>
+                    </div>
+                    <div class="d-flex">
+                      <p>Жанры: {% for genre_of_book in book.genre_of_book() %} {{ genre_of_book }} {% endfor %}</p>
+                      <p class="ms-auto"> Количество страниц: {{ book.volume }}</p>
                     </div>
                 </div>
             </div>

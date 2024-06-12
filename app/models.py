@@ -69,6 +69,12 @@ class Book(Base):
             return self.rating_sum / self.rating_num
         return 0
     
+    def genre_of_book(self):
+        list_of_genres_id = db.session.execute(db.select(Book_Genre).filter_by(book_id=self.id)).scalars()
+        sposok_genres_id = [i.genre_id for i in list(list_of_genres_id)]
+        list_genres = db.session.execute(db.select(Genre).filter(Genre.id.in_(sposok_genres_id))).scalars()
+        genres = [i.name for i in list(list_genres)]
+        return genres
 
 class Image(Base):
     __tablename__ = 'images'
